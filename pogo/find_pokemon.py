@@ -53,7 +53,7 @@ POKEBALL = 1
 GREATBALL = 2
 ULTRABALL = 3
 MAX_EMPTY_SEARCHES = 2
-
+BLACKLIST = [60, 69, 90, 98, 116, 118, 120]
 search_mode = SEARCH_POKEMON
 
 
@@ -83,12 +83,12 @@ def getProfile(session):
         logging.info(profile)
 
 
-def sortClosePokemon(session, minimum_id=None):
+def sortClosePokemon(session, minimum_id=None, blacklist=None):
     """Get Map details and print pokemon"""
 
     ordered_pokemons = []
     logging.info("Searching for pokemon")
-    cells = session.getMapObjects()
+    cells = session.getMapObjects(radius=20)
 
     latitude, longitude, _ = session.getCoordinates()
     for cell in cells.map_cells:
@@ -105,6 +105,12 @@ def sortClosePokemon(session, minimum_id=None):
                     logging.debug('Ignoring pokemon {0} with id {1}, because its below {2}'.format(pokedex.Pokemons[pokemon_id],
                                                                                                    pokemon_id,
                                                                                                    minimum_id))
+                    continue
+
+            if blacklist:
+                if pokemon_id in blacklist:
+                    logging.info('Ignoring pokemon {0} with id {1}, because its blacklisted'.format(pokedex.Pokemons[pokemon_id],
+                                                                                                     pokemon_id))
                     continue
 
             rarity = pokedex.RarityByNumber(pokemon_id)
@@ -301,7 +307,7 @@ def botTheStops(session):
         try:
             forts = sortCloseForts(session, visited=visited_stops)
             logging.info("Detected %s forts, going to spin first 10", len(forts))
-            for fort in forts[:10]:
+            for fort in forts[:100]:
                 walkAndSpin(session, fort)
                 # visited_stops.append(fort.id)
                 # forts = sortCloseForts(session, visited=visited_stops)
@@ -336,7 +342,7 @@ def botThePokemon(session):
                 session = poko_session.authenticate(get_nex_location())
                 empty_searches = 0
 
-            sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=53)
+            sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST)
             if not sorted_list_of_pokemon:
                 empty_searches += 1
 
