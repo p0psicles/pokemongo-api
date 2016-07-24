@@ -292,17 +292,26 @@ def simpleBot(session):
 
 
 def botTheStops(session):
+    # Trying not to flood the servers
+    cooldown = 1
 
     stop = False
     while not stop:
         visited_stops = []
-        forts = sortCloseForts(session, visited=visited_stops)
-        for fort in forts:
-            walkAndSpin(session, fort)
-            visited_stops.append(fort.id)
+        try:
             forts = sortCloseForts(session, visited=visited_stops)
-            time.sleep(1)
-        session = poko_session.authenticate(get_nex_location())
+            logging.info("Detected %s forts, going to spin first 10", len(forts))
+            for fort in forts[:10]:
+                walkAndSpin(session, fort)
+                # visited_stops.append(fort.id)
+                # forts = sortCloseForts(session, visited=visited_stops)
+                time.sleep(1)
+        except Exception:
+            logging.critical("Exception detected! [%s], trying to continue!", traceback.format_exc())
+            session = poko_session.authenticate(search_locations[1])
+            time.sleep(cooldown)
+            cooldown *= 2
+            continue
 
 
 def botThePokemon(session):
@@ -335,7 +344,7 @@ def botThePokemon(session):
                 walkAndCatch(session, pokemon)
                 empty_searches = 0
             time.sleep(3)
-        except Exception as e:
+        except Exception:
             logging.critical("Exception detected! [%s], trying to continue!", traceback.format_exc())
             session = poko_session.authenticate(search_locations[1])
             time.sleep(cooldown)
