@@ -487,10 +487,14 @@ class PogoSession(object):
             olongitude
         )
 
-        # Run walk
-        divisions = closest / step
-        dLat = (latitude - olatitude) / divisions
-        dLon = (longitude - olongitude) / divisions
+        if closest > 0:
+            # Run walk
+            divisions = closest / step
+            dLat = (latitude - olatitude) / divisions
+            dLon = (longitude - olongitude) / divisions
+        else:
+            # Don't want to catch a second one too fast
+            time.sleep(2)
 
         logging.info("Walking %f meters. This will take %f seconds..." % (dist, dist / step))
         while dist > epsilon:
