@@ -41,9 +41,22 @@ denbosch_centrum = ['Den Bosch, Postelstraat',
                     "Citadellaan 26, 5211 XB 's-Hertogenbosch",
                     "Markt 53, 5211 JW 's-Hertogenbosch"]
 
+bijlmer = ['52.313873, 4.951974',
+           '52.312925, 4.924999',
+           '52.298204, 4.939119',
+           '52.307218, 4.964653',
+           '52.312935, 4.981653',
+           '52.316280, 4.979121',
+           '52.316745, 4.969101',
+           '52.340654, 4.992044',
+           '52.349149, 5.004146',
+           '52.355597, 4.980886',
+           '52.314502, 4.941578',
+           ]
+
 blacklist = [46]
 
-search_locations = denbosch_centrum + water_locations
+search_locations = bijlmer
 
 last_search_location = 0
 
@@ -152,6 +165,10 @@ def walkAndCatch(session, pokemon, pokeball=None):
         logging.info("Catching %s:", pokedex.Pokemons[pokemon_id])
 
         rarity = pokedex.RarityByNumber(pokemon_id)
+
+        if rarity > 2 and session.getInventory()["bag"][2]:
+            pokeball = ULTRABALL
+
         if rarity > 3 and session.getInventory()["bag"][3]:
             pokeball = ULTRABALL
 
@@ -334,6 +351,7 @@ def botThePokemon(session):
                 stop = True
 
             # Use greatballs if all your pokeballs have been used
+            # Then if greatballs are used, bot the stops
             if session.getInventory()["bag"][2] < 2:
                 botTheStops(session)
 
