@@ -135,7 +135,7 @@ class PokeAuthSession(object):
             session=session
         )
 
-    def authenticate(self, locationLookup):
+    def authenticate(self, locationLookup=''):
         """We already have all information, authenticate"""
         return {
             "google": self.createGoogleSession,

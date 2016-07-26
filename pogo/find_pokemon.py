@@ -7,6 +7,7 @@ from custom_exceptions import GeneralPogoException
 
 from api import PokeAuthSession
 from location import Location
+from inventory import items
 import traceback
 
 from pokedex import pokedex
@@ -25,6 +26,27 @@ water_locations = [
     '51.694217, 5.299179',
     '51.702921, 5.290038',
 ]
+
+tilburg = ['51.560125, 5.083498',
+           '51.559538, 5.091222',
+           '51.562606, 5.091137',
+           '51.567434, 5.088304',
+           '51.567141, 5.081867',
+           '51.563860, 5.083498',
+           '51.560178, 5.078005',
+           '51.556843, 5.077704',
+           '51.552147, 5.080708',
+           '51.557670, 5.081309',
+           '51.558657, 5.087532',
+           '51.556124, 5.091115',
+           '51.553803, 5.089023',
+           '51.552575, 5.092692',
+           '51.552195, 5.094827',
+           '51.552702, 5.097338',
+           '51.555715, 5.096345',
+           '51.558365, 5.094457',
+           '51.560284, 5.081264',
+           ]
 
 denbosch_centrum = ['Den Bosch, Postelstraat',
                     'Den Bosch, Vughterstraat 89',
@@ -54,9 +76,60 @@ bijlmer = ['52.313873, 4.951974',
            '52.314502, 4.941578',
            ]
 
+zuiderplas = [
+              '51.672547, 5.312482',
+              '51.674729, 5.311774',
+              '51.677204, 5.312976',
+              '51.675621, 5.318319',
+              '51.677909, 5.318469',
+              '51.678002, 5.323812',
+              "Pettelaarse Schans, De Pettelaarse Schans, 's-Hertogenbosch",
+              '51.677714, 5.328566',
+              '51.678105, 5.334394',
+              '51.676092, 5.333203',
+              '51.672882, 5.323460',
+              '51.671574, 5.314402',
+              ]
+
+zandvoort = ['2042 AG Zandvoort',
+             'Schelpenplein 19, 2042 HJ Zandvoort',
+             'Zuidstrand 7, 2042 AG Zandvoort',
+             '52.342815, 4.503499',
+             '52.333376, 4.497319',
+             '52.322832, 4.489809',
+             '52.311919, 4.481741',
+             '52.322832, 4.489809',
+             '52.333376, 4.497319',
+             '52.342815, 4.503499',
+             'Zuidstrand 7, 2042 AG Zandvoort',
+             ]
+
+texel = ['52.998429, 4.766776',
+         '53.000082, 4.738967',
+         '53.011238, 4.735190',
+         '53.019706, 4.719741',
+         '53.032509, 4.710814',
+         '53.049229, 4.716651',
+         '53.068315, 4.725920',
+         'Ruijslaan 92, 1796 AZ De Koog',
+         '53.094918, 4.748751',
+         '53.131573, 4.788706',
+         '53.146814, 4.818231',
+         '53.167194, 4.825441',
+         '53.183968, 4.846894',
+         '53.158861, 4.875390',
+         '53.136829, 4.905945',
+         '53.116846, 4.897362',
+         '53.101801, 4.894272',
+         '53.077471, 4.892899',
+         '53.056842, 4.871956',
+         '53.032717, 4.829935',
+         '53.006488, 4.783930',
+         ]
+
 blacklist = [46]
 
-search_locations = bijlmer
+search_locations = tilburg
 
 last_search_location = 0
 
@@ -65,7 +138,7 @@ SEARCH_STOPS = 2
 POKEBALL = 1
 GREATBALL = 2
 ULTRABALL = 3
-MAX_EMPTY_SEARCHES = 2
+MAX_EMPTY_SEARCHES = 1
 BLACKLIST = [60, 69, 90, 98, 116, 118, 120]
 search_mode = SEARCH_POKEMON
 
@@ -115,18 +188,18 @@ def sortClosePokemon(session, minimum_id=None, blacklist=None):
 
             if minimum_id:
                 if pokemon_id < minimum_id:
-                    logging.debug('Ignoring pokemon {0} with id {1}, because its below {2}'.format(pokedex.Pokemons[pokemon_id],
+                    logging.debug('Ignoring pokemon {0} with id {1}, because its below {2}'.format(pokedex[pokemon_id],
                                                                                                    pokemon_id,
                                                                                                    minimum_id))
                     continue
 
             if blacklist:
                 if pokemon_id in blacklist:
-                    logging.info('Ignoring pokemon {0} with id {1}, because its blacklisted'.format(pokedex.Pokemons[pokemon_id],
-                                                                                                     pokemon_id))
+                    logging.info('Ignoring pokemon {0} with id {1}, because its blacklisted'.format(pokedex[pokemon_id],
+                                                                                                    pokemon_id))
                     continue
 
-            rarity = pokedex.RarityByNumber(pokemon_id)
+            rarity = pokedex.getRarityById(pokemon_id)
 
             # Fins distance to pokemon
             dist = Location.getDistance(
@@ -138,7 +211,7 @@ def sortClosePokemon(session, minimum_id=None, blacklist=None):
 
             # Log the pokemon found
             logging.info("%s, %f meters away" % (
-                pokedex.Pokemons[pokemon_id],
+                pokedex[pokemon_id],
                 dist
             ))
 
@@ -147,6 +220,73 @@ def sortClosePokemon(session, minimum_id=None, blacklist=None):
     # Remove visited forts if provided
     ordered_pokemons = sorted(ordered_pokemons, key=lambda k: k['distance'])
     return [instance['pokemon'] for instance in ordered_pokemons]
+
+
+# Wrap both for ease
+def encounterAndCatch(session, pokemon, thresholdP=0.5, limit=5, delay=2):
+    # Start encounter
+    encounter = session.encounterPokemon(pokemon)
+
+    # Grab needed data from proto
+    chances = encounter.capture_probability.capture_probability
+    balls = encounter.capture_probability.pokeball_type
+    bag = session.checkInventory().bag
+
+    # Have we used a razz berry yet?
+    berried = False
+
+    # Make sure we aren't oer limit
+    count = 0
+
+    # Attempt catch
+    while True:
+        bestBall = items.UNKNOWN
+        altBall = items.UNKNOWN
+
+        # Check for balls and see if we pass
+        # wanted threshold
+        for i in range(len(balls)):
+            if balls[i] in bag:
+                altBall = balls[i]
+                if chances[i] > thresholdP:
+                    bestBall = balls[i]
+                    break
+
+        # If we can't determine a ball, try a berry
+        # or use a lower class ball
+        if bestBall == items.UNKNOWN:
+            if not berried and items.RAZZ_BERRY in bag and bag[items.RAZZ_BERRY]:
+                logging.info("Using a RAZZ_BERRY")
+                session.useItemCapture(items.RAZZ_BERRY, pokemon)
+                berried = True
+                time.sleep(delay)
+                continue
+
+            # if no alt ball, there are no balls
+            elif altBall == items.UNKNOWN:
+                raise GeneralPogoException("Out of usable balls")
+            else:
+                bestBall = altBall
+
+        # Try to catch it!!
+        logging.info("Using a %s" % items[bestBall])
+        attempt = session.catchPokemon(pokemon, bestBall)
+        time.sleep(delay)
+
+        # Success or run away
+        if attempt.status == 1:
+            return attempt
+
+        # CATCH_FLEE is bad news
+        if attempt.status == 3:
+            logging.info("Possible soft ban.")
+            return attempt
+
+        # Only try up to x attempts
+        count += 1
+        if count >= limit:
+            logging.info("Over catch limit")
+            return None
 
 
 def findClosestPokemon(session):
@@ -162,28 +302,13 @@ def walkAndCatch(session, pokemon, pokeball=None):
         if not pokemon_id:
             pokemon_id = pokemon.pokemon_data.pokemon_id
 
-        logging.info("Catching %s:", pokedex.Pokemons[pokemon_id])
+        logging.info("Catching %s:", pokedex[pokemon_id])
 
-        rarity = pokedex.RarityByNumber(pokemon_id)
+        rarity = pokedex.getRarityById(pokemon_id)
 
-        if rarity > 2 and session.getInventory()["bag"][2]:
-            pokeball = ULTRABALL
-
-        if rarity > 3 and session.getInventory()["bag"][3]:
-            pokeball = ULTRABALL
-
-        # Use greatballs if all your pokeballs have been used
-        if not pokeball:
-            if session.getInventory()["bag"][1]:
-                pokeball = POKEBALL
-            elif session.getInventory()["bag"][2]:
-                pokeball = GREATBALL
-            elif session.getInventory()["bag"][3]:
-                pokeball = ULTRABALL
-
-        session.walkTo(pokemon.latitude, pokemon.longitude, step=3.2)
-        logging.info(session.encounterAndCatch(pokemon, pokeball=pokeball))
-        session.setCoordinates(pokemon.latitude, pokemon.longitude)
+        logging.info("Catching %s:" % pokedex[pokemon_id])
+        session.walkTo(pokemon.latitude, pokemon.longitude, step=4.5)
+        logging.info(encounterAndCatch(session, pokemon))
 
 
 # Do Inventory stuff
@@ -232,7 +357,7 @@ def walkAndSpin(session, fort):
     if fort:
         logging.info("Spinning a Fort:")
         # Walk over
-        session.walkTo(fort.latitude, fort.longitude, step=3.2)
+        session.walkTo(fort.latitude, fort.longitude, step=4.5)
         # Give it a spin
         fortResponse = session.getFortSearch(fort)
         # Change my current location to the pokemons location
@@ -346,19 +471,21 @@ def botThePokemon(session):
     stop = False
     while not stop:
         try:
+            inventory = session.getInventory()
             # stop for now, when we have 250 pokemon
-            if len(session.getInventory()["party"]) >= 250:
+            if len(inventory.party) >= 250:
                 stop = True
 
             # Use greatballs if all your pokeballs have been used
             # Then if greatballs are used, bot the stops
-            if session.getInventory()["bag"][2] < 2:
+            if inventory.bag[2] < 2:
                 botTheStops(session)
 
             # When we haven't found a pokemon for 10 searches in a row, let's move on
             if empty_searches >= MAX_EMPTY_SEARCHES:
-                session = poko_session.authenticate(get_nex_location())
+                changeLocation(session, get_nex_location())
                 empty_searches = 0
+                continue
 
             sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST)
             if not sorted_list_of_pokemon:
@@ -367,13 +494,21 @@ def botThePokemon(session):
             for pokemon in sorted_list_of_pokemon:
                 walkAndCatch(session, pokemon)
                 empty_searches = 0
-            time.sleep(3)
+                time.sleep(3)
+
+            time.sleep(2)
         except Exception:
             logging.critical("Exception detected! [%s], trying to continue!", traceback.format_exc())
-            session = poko_session.authenticate(search_locations[1])
+            session = poko_session.reauthenticate(session)
             time.sleep(cooldown)
             cooldown *= 2
             continue
+
+
+def changeLocation(session, maps_location):
+    location = Location(maps_location, geo_key=None).getGeo(maps_location)
+    session.setCoordinates(location.latitude, location.longitude)
+    logging.info("Continue to search on location: %s", location)
 
 # Entry point
 # Start off authentication and demo

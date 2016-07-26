@@ -5,7 +5,7 @@ import gpxpy.geo
 
 # Wrapper for location
 class Location(object):
-    def __init__(self, locationLookup, geo_key):
+    def __init__(self, locationLookup, geo_key=None):
         self.geo_key = geo_key
         self.locator = GoogleV3()
         if geo_key:
@@ -25,11 +25,16 @@ class Location(object):
     def getDistance(*coords):
         return gpxpy.geo.haversine_distance(*coords)
 
-    def setLocation(self, search):
+    def getGeo(self, search):
         try:
             geo = self.locator.geocode(search)
         except:
             raise GeneralPogoException('Error in Geo Request')
+        else:
+            return geo
+
+    def setLocation(self, search):
+        geo = self.getGeo(search)
         return geo.latitude, geo.longitude, geo.altitude
 
     def setCoordinates(self, latitude, longitude):
