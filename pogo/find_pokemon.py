@@ -451,6 +451,8 @@ def botTheStops(session):
             logging.info("Detected %s forts, going to spin first 10", len(forts))
             for fort in forts[:100]:
                 walkAndSpin(session, fort)
+                logging.info("Search for pokemon at the stop")
+                search_pokemon(session)
                 # visited_stops.append(fort.id)
                 # forts = sortCloseForts(session, visited=visited_stops)
                 time.sleep(1)
@@ -460,6 +462,35 @@ def botTheStops(session):
             time.sleep(cooldown)
             cooldown *= 2
             continue
+
+
+def search_pokemon(session):
+    inventory = session.getInventory()
+    # stop for now, when we have 250 pokemon
+    if len(inventory.party) >= 250:
+        stop = True
+
+    # Use greatballs if all your pokeballs have been used
+    # Then if greatballs are used, bot the stops
+#     if inventory.bag[2] < 2:
+#         botTheStops(session)
+
+    # When we haven't found a pokemon for 10 searches in a row, let's move on
+#     if empty_searches >= MAX_EMPTY_SEARCHES:
+#         changeLocation(session, get_nex_location())
+#         empty_searches = 0
+#         continue
+
+    sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST)
+#     if not sorted_list_of_pokemon:
+#         empty_searches += 1
+
+    for pokemon in sorted_list_of_pokemon:
+        walkAndCatch(session, pokemon)
+#         empty_searches = 0
+        time.sleep(3)
+
+    time.sleep(2)
 
 
 def botThePokemon(session):
