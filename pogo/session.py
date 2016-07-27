@@ -22,6 +22,7 @@ from custom_exceptions import GeneralPogoException
 from inventory import Inventory, items
 from location import Location
 from state import State
+from pushbullet import PushBulletNotify
 
 import requests
 import logging
@@ -52,6 +53,9 @@ class PogoSession(object):
 
         # Set up Inventory
         self.getInventory()
+
+        # Reserve for the Pushbullet Api
+        self.pushbullet = None
 
     def __str__(self):
         s = 'Access Token: {0}\nEndpoint: {1}\nLocation: {2}'.format(
@@ -512,3 +516,9 @@ class PogoSession(object):
                 olatitude,
                 olongitude
             )
+
+    def setup_pushbullet(self, api_key, api_device):
+        self.pushbullet = PushBulletNotify(api_key, api_device)
+        devices = self.pushbullet.get_devices()
+        self.pushbullet.set_device()
+        return devices

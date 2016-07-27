@@ -13,6 +13,7 @@ import traceback
 from pokedex import pokedex
 from pogo.POGOProtos.Settings.Master.Item.PokeballAttributes_pb2 import PokeballAttributes
 
+
 water_locations = [
     'Den Bosch, Zuidwal 11',
     '51.683096, 5.302949',
@@ -154,6 +155,8 @@ ULTRABALL = 3
 MAX_EMPTY_SEARCHES = 1
 BLACKLIST = [69, 90, 98, 116, 118, 120]
 WHITELIST = [2, 3, 4, 5, 6, 8, 9, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 58, 59, 116]
+PB_API = None
+PB_DEV = None
 
 search_mode = SEARCH_POKEMON
 
@@ -179,9 +182,9 @@ def setupLogger():
 # Example functions
 # Get profile
 def getProfile(session):
-        logging.info("Printing Profile:")
-        profile = session.getProfile()
-        logging.info(profile)
+    logging.info("Printing Profile:")
+    profile = session.getProfile()
+    logging.info(profile)
 
 
 def sortClosePokemon(session, minimum_id=None, blacklist=[], whitelist=[]):
@@ -260,7 +263,7 @@ def encounterAndCatch(session, pokemon, thresholdP=0.5, limit=5, delay=2):
         # Check for balls and see if we pass
         # wanted threshold
         for i in range(len(balls)):
-            if balls[i] in bag:
+            if balls[i] in bag and bag[balls[i]] > 0:
                 altBall = balls[i]
                 if chances[i] > thresholdP:
                     bestBall = balls[i]
@@ -322,7 +325,15 @@ def walkAndCatch(session, pokemon, pokeball=None):
 
         logging.info("Catching %s:" % pokedex[pokemon_id])
         session.walkTo(pokemon.latitude, pokemon.longitude, step=4.5)
-        logging.info(encounterAndCatch(session, pokemon))
+
+        attempt = encounterAndCatch(session, pokemon)
+        if all([attempt and attempt.status == 1,
+               session.pushbullet,
+               session.pushbullet.pushbullet_device]):
+            session.pushbullet.notify_pokemon(pokemon,
+                                              poke_name=pokedex[pokemon_id])
+
+        logging.info(attempt)
 
 
 # Do Inventory stuff
@@ -382,7 +393,7 @@ def walkAndSpin(session, fort):
 # Walk and spin everywhere
 def walkAndSpinMany(session, forts):
     for fort in forts:
-        walkAndSpin(fort)
+        walkAndSpin(session, fort)
 
 
 # A very brute force approach to evolving
@@ -545,6 +556,7 @@ def botThePokemon(session):
         except Exception:
             logging.critical("Exception detected! [%s], trying to continue!", traceback.format_exc())
             session = poko_session.reauthenticate(session)
+            session.setup_pushbullet(PB_API, PB_DEV)
             time.sleep(cooldown)
             cooldown *= 2
             continue
@@ -568,6 +580,8 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--password", help="Password", required=True)
     parser.add_argument("-l", "--location", help="Location", required=True)
     parser.add_argument("-c", "--action", help="Action", required=False)
+    parser.add_argument("-x", "--pb_api", help="Pushbullet Api key", required=False)
+    parser.add_argument("-y", "--pb_dev", help="Pushbullet Device key", required=False)
     parser.add_argument("-g", "--geo_key", help="GEO API Secret")
     args = parser.parse_args()
 
@@ -594,6 +608,10 @@ if __name__ == '__main__':
     # But is important to session
     # session = poko_session.authenticate(args.location)
     session = poko_session.authenticate(search_locations[1])
+    if args.pb_api:
+        PB_API = args.pb_api
+        PB_DEV = args.pb_dev
+        session.setup_pushbullet(PB_API, PB_DEV)
 
     # Time to show off what we can do
     if session:
