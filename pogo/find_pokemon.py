@@ -98,7 +98,6 @@ zuiderplas = [
               '51.675621, 5.318319',
               '51.677909, 5.318469',
               '51.678002, 5.323812',
-              "Pettelaarse Schans, De Pettelaarse Schans, 's-Hertogenbosch",
               '51.677714, 5.328566',
               '51.678105, 5.334394',
               '51.676092, 5.333203',
@@ -106,17 +105,13 @@ zuiderplas = [
               '51.671574, 5.314402',
               ]
 
-zandvoort = ['2042 AG Zandvoort',
-             'Schelpenplein 19, 2042 HJ Zandvoort',
-             'Zuidstrand 7, 2042 AG Zandvoort',
-             '52.342815, 4.503499',
+zandvoort = ['52.342815, 4.503499',
              '52.333376, 4.497319',
              '52.322832, 4.489809',
              '52.311919, 4.481741',
              '52.322832, 4.489809',
              '52.333376, 4.497319',
              '52.342815, 4.503499',
-             'Zuidstrand 7, 2042 AG Zandvoort',
              ]
 
 texel = ['52.998429, 4.766776',
@@ -126,7 +121,6 @@ texel = ['52.998429, 4.766776',
          '53.032509, 4.710814',
          '53.049229, 4.716651',
          '53.068315, 4.725920',
-         'Ruijslaan 92, 1796 AZ De Koog',
          '53.094918, 4.748751',
          '53.131573, 4.788706',
          '53.146814, 4.818231',
@@ -563,9 +557,9 @@ def botThePokemon(session):
 
 
 def changeLocation(session, maps_location, geo_key=None):
-    location = Location(maps_location, session.location.geo_key)
-    session.setCoordinates(location.latitude, location.longitude)
-    logging.info("Continue to search on location: %s", location)
+    latitude, longitude = [float(loc) for loc in maps_location.split(', ')]
+    session.setCoordinates(latitude, longitude)
+    logging.info("Continue to search on location: %s", maps_location)
 
 # Entry point
 # Start off authentication and demo
