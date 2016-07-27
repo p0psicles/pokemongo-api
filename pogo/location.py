@@ -25,17 +25,13 @@ class Location(object):
     def getDistance(*coords):
         return gpxpy.geo.haversine_distance(*coords)
 
-    def getGeo(self, search):
+    def setLocation(self, search):
         try:
             geo = self.locator.geocode(search)
         except:
             raise GeneralPogoException('Error in Geo Request')
         else:
-            return geo
-
-    def setLocation(self, search):
-        geo = self.getGeo(search)
-        return geo.latitude, geo.longitude, geo.altitude
+            return geo.latitude, geo.longitude, geo.altitude
 
     def setCoordinates(self, latitude, longitude):
         self.latitude = latitude

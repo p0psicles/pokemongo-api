@@ -46,6 +46,20 @@ tilburg = ['51.560125, 5.083498',
            '51.555715, 5.096345',
            '51.558365, 5.094457',
            '51.560284, 5.081264',
+           '51.556040, 5.088258',
+           '51.555506, 5.085082',
+           '51.553505, 5.081499',
+           '51.552158, 5.080705',
+           '51.551864, 5.076692',
+           '51.550543, 5.071586',
+           '51.552438, 5.069204',
+           '51.554279, 5.067315',
+           '51.557321, 5.068303',
+           '51.561416, 5.074289',
+           '51.563937, 5.073753',
+           '51.565631, 5.077701',
+           '51.563097, 5.080426',
+           '51.561229, 5.079697',
            ]
 
 denbosch_centrum = ['Den Bosch, Postelstraat',
@@ -127,7 +141,6 @@ texel = ['52.998429, 4.766776',
          '53.006488, 4.783930',
          ]
 
-blacklist = [46]
 
 search_locations = tilburg
 
@@ -139,7 +152,9 @@ POKEBALL = 1
 GREATBALL = 2
 ULTRABALL = 3
 MAX_EMPTY_SEARCHES = 1
-BLACKLIST = [60, 69, 90, 98, 116, 118, 120]
+BLACKLIST = [69, 90, 98, 116, 118, 120]
+WHITELIST = [2, 3, 4, 5, 6, 8, 9, 25, 26, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 58, 59, 116]
+
 search_mode = SEARCH_POKEMON
 
 
@@ -169,7 +184,7 @@ def getProfile(session):
         logging.info(profile)
 
 
-def sortClosePokemon(session, minimum_id=None, blacklist=None):
+def sortClosePokemon(session, minimum_id=None, blacklist=[], whitelist=[]):
     """Get Map details and print pokemon"""
 
     ordered_pokemons = []
@@ -193,11 +208,10 @@ def sortClosePokemon(session, minimum_id=None, blacklist=None):
                                                                                                    minimum_id))
                     continue
 
-            if blacklist:
-                if pokemon_id in blacklist:
-                    logging.info('Ignoring pokemon {0} with id {1}, because its blacklisted'.format(pokedex[pokemon_id],
-                                                                                                    pokemon_id))
-                    continue
+            if pokemon_id in blacklist and pokemon_id not in whitelist:
+                logging.info('Ignoring pokemon {0} with id {1}, because its blacklisted'.format(pokedex[pokemon_id],
+                                                                                                pokemon_id))
+                continue
 
             rarity = pokedex.getRarityById(pokemon_id)
 
@@ -357,7 +371,7 @@ def walkAndSpin(session, fort):
     if fort:
         logging.info("Spinning a Fort:")
         # Walk over
-        session.walkTo(fort.latitude, fort.longitude, step=4.5)
+        session.walkTo(fort.latitude, fort.longitude, step=4)
         # Give it a spin
         fortResponse = session.getFortSearch(fort)
         # Change my current location to the pokemons location
@@ -453,8 +467,8 @@ def botTheStops(session):
                 walkAndSpin(session, fort)
                 logging.info("Search for pokemon at the stop")
                 search_pokemon(session)
-                # visited_stops.append(fort.id)
-                # forts = sortCloseForts(session, visited=visited_stops)
+                visited_stops.append(fort.id)
+                forts = sortCloseForts(session, visited=visited_stops)
                 time.sleep(1)
         except Exception:
             logging.critical("Exception detected! [%s], trying to continue!", traceback.format_exc())
@@ -481,7 +495,7 @@ def search_pokemon(session):
 #         empty_searches = 0
 #         continue
 
-    sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST)
+    sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST, whitelist=WHITELIST)
 #     if not sorted_list_of_pokemon:
 #         empty_searches += 1
 
@@ -537,7 +551,7 @@ def botThePokemon(session):
 
 
 def changeLocation(session, maps_location):
-    location = Location(maps_location, geo_key=None).getGeo(maps_location)
+    location = Location(maps_location, geo_key=None)
     session.setCoordinates(location.latitude, location.longitude)
     logging.info("Continue to search on location: %s", location)
 
