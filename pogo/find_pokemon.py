@@ -562,8 +562,8 @@ def botThePokemon(session):
             continue
 
 
-def changeLocation(session, maps_location):
-    location = Location(maps_location, geo_key=None)
+def changeLocation(session, maps_location, geo_key=None):
+    location = Location(maps_location, session.location.geo_key)
     session.setCoordinates(location.latitude, location.longitude)
     logging.info("Continue to search on location: %s", location)
 
