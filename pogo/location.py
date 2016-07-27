@@ -3,6 +3,7 @@ from s2sphere import CellId, LatLng
 from custom_exceptions import GeneralPogoException
 import gpxpy.geo
 
+
 # Wrapper for location
 class Location(object):
     def __init__(self, locationLookup, geo_key=None):
@@ -28,8 +29,8 @@ class Location(object):
     def setLocation(self, search):
         try:
             geo = self.locator.geocode(search)
-        except:
-            raise GeneralPogoException('Error in Geo Request')
+        except Exception as e:
+            raise GeneralPogoException('Error in Geo Request, with exception: %s'.format(e))
         else:
             return geo.latitude, geo.longitude, geo.altitude
 
