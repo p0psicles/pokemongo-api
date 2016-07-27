@@ -30,7 +30,7 @@ class Location(object):
         try:
             geo = self.locator.geocode(search)
         except Exception as e:
-            raise GeneralPogoException('Error in Geo Request, with exception: %s'.format(e))
+            raise GeneralPogoException('Error in Geo Request, with exception: {0}'.format(e))
         else:
             return geo.latitude, geo.longitude, geo.altitude
 
