@@ -620,13 +620,18 @@ if __name__ == '__main__':
         session.getProfile()
         session.getInventory()
 
-        if search_mode == SEARCH_POKEMON:
-            botThePokemon(session)
+        try:
+            if search_mode == SEARCH_POKEMON:
+                botThePokemon(session)
 
-        elif search_mode == SEARCH_STOPS:
-            # Pokestop related
-            # Keep track of stops we just visited
-            botTheStops(session)
+            elif search_mode == SEARCH_STOPS:
+                # Pokestop related
+                # Keep track of stops we just visited
+                botTheStops(session)
+        except Exception as e:
+            if all([session.pushbullet,
+                   session.pushbullet.pushbullet_device]):
+                session.pushbullet.notify_pokemon('Bot stopped!', 'Exception: {0}'.format(e))
 
     else:
         logging.critical('Session not created successfully')
