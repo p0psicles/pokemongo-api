@@ -376,7 +376,8 @@ def walkAndSpin(session, fort):
     if fort:
         logging.info("Spinning a Fort:")
         # Walk over
-        session.walkTo(fort.latitude, fort.longitude, step=4)
+        session.walkTo(fort.latitude, fort.longitude, step=4,
+                       walk_and_catch_callback=search_pokemon)
         # Give it a spin
         fortResponse = session.getFortSearch(fort)
         # Change my current location to the pokemons location
@@ -487,29 +488,19 @@ def search_pokemon(session):
     inventory = session.getInventory()
     # stop for now, when we have 250 pokemon
     if len(inventory.party) >= 250:
-        stop = True
+        logging.error('Pokemon Inventory full (250), cant catch this one')
+        time.sleep(2)
+        return None
 
     # Use greatballs if all your pokeballs have been used
     # Then if greatballs are used, bot the stops
-#     if inventory.bag[2] < 2:
+#     if inventory.bag[1] == 0 and inventory.bag[2] == 0:
 #         botTheStops(session)
 
-    # When we haven't found a pokemon for 10 searches in a row, let's move on
-#     if empty_searches >= MAX_EMPTY_SEARCHES:
-#         changeLocation(session, get_nex_location())
-#         empty_searches = 0
-#         continue
-
     sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST, whitelist=WHITELIST)
-#     if not sorted_list_of_pokemon:
-#         empty_searches += 1
 
     for pokemon in sorted_list_of_pokemon:
         walkAndCatch(session, pokemon)
-#         empty_searches = 0
-        time.sleep(3)
-
-    time.sleep(2)
 
 
 def botThePokemon(session):
@@ -528,7 +519,7 @@ def botThePokemon(session):
 
             # Use greatballs if all your pokeballs have been used
             # Then if greatballs are used, bot the stops
-            if inventory.bag[2] < 2:
+            if inventory.bag[1] == 0 and inventory.bag[2] == 0:
                 botTheStops(session)
 
             # When we haven't found a pokemon for 10 searches in a row, let's move on
@@ -537,7 +528,7 @@ def botThePokemon(session):
                 empty_searches = 0
                 continue
 
-            sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST)
+            sorted_list_of_pokemon = sortClosePokemon(session, minimum_id=60, blacklist=BLACKLIST, whitelist=WHITELIST)
             if not sorted_list_of_pokemon:
                 empty_searches += 1
 

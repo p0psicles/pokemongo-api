@@ -478,7 +478,7 @@ class PogoSession(object):
     # These act as more logical functions.
     # Might be better to break out seperately
     # Walk over to position in meters
-    def walkTo(self, olatitude, olongitude, epsilon=10, step=7.5):
+    def walkTo(self, olatitude, olongitude, epsilon=10, step=7.5, walk_and_catch_callback=None):
         if step >= epsilon:
             raise GeneralPogoException("Walk may never converge")
 
@@ -501,6 +501,9 @@ class PogoSession(object):
             time.sleep(2)
 
         logging.info("Walking %f meters. This will take %f seconds..." % (dist, dist / step))
+
+        # Keep track of seconds (sleep) to make sure we're not doing to many searches.
+        seconds = 0
         while dist > epsilon:
             logging.debug("%f m -> %f m away", closest - dist, closest)
             latitude -= dLat
@@ -516,6 +519,12 @@ class PogoSession(object):
                 olatitude,
                 olongitude
             )
+
+            if walk_and_catch_callback and seconds > 10:
+                walk_and_catch_callback(self)
+                seconds = 0
+
+            seconds += 1
 
     def setup_pushbullet(self, api_key, api_device):
         self.pushbullet = PushBulletNotify(api_key, api_device)
